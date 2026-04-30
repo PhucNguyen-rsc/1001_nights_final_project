@@ -33,6 +33,10 @@ Thumbs.db
 .~*
 __pycache__/
 .idea/
+.vscode/
+.venv/
+venv/
+.claude/
 /build
 /dist
 /save

@@ -91,16 +91,23 @@ def event_process(self):
                     sys.exit()
 
             elif "bgchange" in child_event["Type"] and "scene" in event_property:
-                pos = 1
-                if "POS" in event_property:
-                    pos = event_property["POS"]
-                if child_event["Object"] != "remove":
-                    self.scenes[child_event["Type"]].data[pos] = child_event["Object"]
-                else:
-                    self.scenes[child_event["Type"]].data[pos] = self.empty_scene_image
-                x = (pos - 1) * self.scenes[child_event["Type"]].data[pos].get_width()
-                rect = self.scenes[child_event["Type"]].data[pos].get_rect(topleft=(x, 0))
-                self.scenes[child_event["Type"]].full_scene_image.blit(self.scenes[child_event["Type"]].data[pos], rect)
+                # Swap the background panel `pos` of scene `event_property["scene"]`
+                # to the image named child_event["Object"] (must be pre-loaded
+                # into scene.images via a bgchange entry seen at stage init).
+                # If property has "fade", cross-fade from the old bg to the new.
+                pos = event_property.get("POS", 1)
+                scene_id = event_property["scene"]
+                scene = self.scenes[scene_id]
+                obj = child_event["Object"]
+                if obj in scene.images:
+                    if "fade" in event_property and scene.full_scene_image is not None:
+                        # snapshot the current full image so the renderer can
+                        # cross-fade it out while the new image fades in
+                        scene.bg_fade_image = scene.full_scene_image.copy()
+                        scene.bg_fade_alpha = 255
+                    scene.data[pos] = obj
+                    scene.setup()  # rebuild full_scene_image
+                    scene.camera_left = None  # invalidate cached current_scene_image
                 self.cutscene_playing.remove(child_event)
 
             elif "bgfade" in child_event["Type"]:
@@ -232,6 +239,12 @@ def event_process(self):
                 if event_property["select"] == "yesno":
                     if self.decision_select not in self.realtime_ui_updater:
                         self.realtime_ui_updater.add(self.decision_select)
+                elif event_property["select"] == "choice":
+                    if self.choice_popup not in self.realtime_ui_updater:
+                        a = event_property.get("choice_a", "Option A")
+                        b = event_property.get("choice_b", "Option B")
+                        self.choice_popup.configure(a, b)
+                        self.realtime_ui_updater.add(self.choice_popup)
 
             if "wait" in event_property or "interact" in event_property or \
                     "select" in event_property:

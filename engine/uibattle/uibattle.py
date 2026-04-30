@@ -424,6 +424,65 @@ class YesNo(UIBattle):
                 pass
 
 
+class ChoicePopup(UIBattle):
+    """A/B text choice popup. Sets self.selected = 'yes' (A) or 'no' (B)
+    on hover + Weak key press. Reuses the engine's yes/no trigger filter system."""
+
+    def __init__(self):
+        UIBattle.__init__(self)
+        self._layer = 9999999999999999999
+        self.selected = None
+        self.option_a = ""
+        self.option_b = ""
+        # placeholder image until configure() is called
+        self.image = Surface((10, 10), SRCALPHA)
+        self.rect = self.image.get_rect()
+        self.a_rect_local = Rect(0, 0, 0, 0)
+        self.b_rect_local = Rect(0, 0, 0, 0)
+        self.base_image = self.image.copy()
+
+    def configure(self, option_a, option_b):
+        self.option_a = str(option_a)
+        self.option_b = str(option_b)
+        self.selected = None
+        sx, sy = self.screen_scale
+        font = Font(self.ui_font["main_button"], int(34 * sy))
+        a_label = font.render("A) " + self.option_a, True, (255, 240, 200))
+        b_label = font.render("B) " + self.option_b, True, (255, 240, 200))
+        pad_x = int(40 * sx)
+        pad_y = int(22 * sy)
+        button_w = max(a_label.get_width(), b_label.get_width()) + pad_x * 2
+        button_h = a_label.get_height() + pad_y * 2
+        gap = int(20 * sy)
+        total_h = button_h * 2 + gap
+        self.image = Surface((button_w, total_h), SRCALPHA)
+        self.a_rect_local = Rect(0, 0, button_w, button_h)
+        self.b_rect_local = Rect(0, button_h + gap, button_w, button_h)
+        for r, label in ((self.a_rect_local, a_label), (self.b_rect_local, b_label)):
+            draw.rect(self.image, (10, 10, 18, 240), r)
+            draw.rect(self.image, (180, 150, 80), r, max(1, int(2 * sy)))
+            self.image.blit(label, (r.x + pad_x, r.y + pad_y))
+        self.base_image = self.image.copy()
+        sw, sh = self.screen_size
+        self.rect = self.image.get_rect(center=(sw // 2, int(sh * 0.40)))
+
+    def update(self):
+        if not self.option_a:
+            return
+        self.image = self.base_image.copy()
+        cursor = self.battle.main_player_battle_cursor.pos
+        rel = (cursor[0] - self.rect.topleft[0], cursor[1] - self.rect.topleft[1])
+        sy = self.screen_scale[1]
+        if self.a_rect_local.collidepoint(rel):
+            draw.rect(self.image, (255, 240, 200), self.a_rect_local, max(2, int(4 * sy)))
+            if self.battle.player_key_press[self.battle.main_player]["Weak"]:
+                self.selected = "yes"
+        elif self.b_rect_local.collidepoint(rel):
+            draw.rect(self.image, (255, 240, 200), self.b_rect_local, max(2, int(4 * sy)))
+            if self.battle.player_key_press[self.battle.main_player]["Weak"]:
+                self.selected = "no"
+
+
 class CharacterIndicator(UIBattle):
     def __init__(self, character):
         self._layer = 9999999999999999998
@@ -1027,6 +1086,165 @@ class CharacterSpeechBox(UIBattle):
             self.character.speech = None
             self.kill()
             return
+
+
+class JRPGDialogueBox(UIBattle):
+    """Suikoden-style dialogue: full-width black bar at bottom of screen, portrait on
+    left or right, speaker name in a bracket above the textbox, scene dimmed behind.
+    Used when a speech event includes a `portrait` property."""
+
+    portraits = {}  # filled at battle init: {"mariana_neutral": Surface, ...}
+
+    def __init__(self, character, text, portrait=None, side="right", speaker_name=None,
+                 specific_timer=None, player_input_indicator=False, cutscene_event=None,
+                 add_log=None, voice=False, font_size=42, **kwargs):
+        self._layer = 9999999999999999998
+        UIBattle.__init__(self, player_cursor_interact=False, has_containers=True)
+
+        sw, sh = int(self.screen_size[0]), int(self.screen_size[1])
+        bar_h = int(sh * 0.28)
+        bar_y = sh - bar_h
+        sx, sy = self.screen_scale
+
+        self.image = Surface((sw, sh), SRCALPHA)
+        # 1) dim the rest of the scene
+        self.image.fill((0, 0, 0, 110))
+        # 2) opaque-ish bar at bottom
+        bar_surface = Surface((sw, bar_h), SRCALPHA)
+        bar_surface.fill((10, 10, 18, 240))
+        self.image.blit(bar_surface, (0, bar_y))
+        # gold-ish top border line
+        border_h = max(2, int(2 * sy))
+        draw.rect(self.image, (180, 150, 80), (0, bar_y, sw, border_h))
+
+        # 3) portrait extending up from the bar
+        text_x_start = int(60 * sx)
+        text_x_end = sw - int(60 * sx)
+        if portrait and portrait in self.portraits:
+            p_img = self.portraits[portrait]
+            target_h = int(bar_h * 1.7)
+            ratio = target_h / p_img.get_height()
+            target_w = int(p_img.get_width() * ratio)
+            p_scaled = smoothscale(p_img, (target_w, target_h))
+            p_y = sh - target_h
+            margin = int(20 * sx)
+            if side == "left":
+                p_x = margin
+                text_x_start = p_x + target_w + int(40 * sx)
+            else:
+                p_x = sw - target_w - margin
+                text_x_end = p_x - int(40 * sx)
+            self.image.blit(p_scaled, (p_x, p_y))
+
+        # 4) speaker name bracket above the bar
+        if speaker_name:
+            name_font = Font(self.ui_font["main_button"], int(48 * sy))
+            name_surface = name_font.render(str(speaker_name), True, (255, 240, 200))
+            pad_x = int(18 * sx)
+            pad_y = int(10 * sy)
+            box_w = name_surface.get_width() + pad_x * 2
+            box_h = name_surface.get_height() + pad_y
+            box = Surface((box_w, box_h), SRCALPHA)
+            box.fill((10, 10, 18, 240))
+            draw.rect(box, (180, 150, 80), box.get_rect(), max(1, int(2 * sy)))
+            box.blit(name_surface, (pad_x, pad_y // 2))
+            self.image.blit(box, (text_x_start, bar_y - box_h - max(1, int(2 * sy))))
+
+        # 5) dialogue text within the bar
+        try:
+            font = Font(self.ui_font[chapter_font_name[self.battle.chapter]], int(font_size * sy))
+        except KeyError:
+            font = Font(self.ui_font["simple_talk_font"], int(font_size * sy))
+        text_y = bar_y + int(50 * sy)
+        text_w = max(100, text_x_end - text_x_start)
+        text_h = bar_h - int(70 * sy)
+        text_surface = Surface((text_w, text_h), SRCALPHA)
+        make_long_text(text_surface, str(text), (0, 0), font, color=Color("white"))
+        self.image.blit(text_surface, (text_x_start, text_y))
+
+        # 6) player input indicator (small triangle, bottom-right of bar)
+        if player_input_indicator:
+            tri = int(18 * sy)
+            tx = text_x_end - tri
+            ty = sh - int(18 * sy)
+            draw.polygon(self.image, (255, 240, 200), [
+                (tx, ty - tri), (tx + tri, ty - tri), (tx + tri // 2, ty)
+            ])
+
+        self.rect = self.image.get_rect(topleft=(0, 0))
+
+        # cache the "fully visible" image for fade-in/out
+        import pygame as _pg
+        self._final_image = self.image.copy()
+        self._fade_in_ms = 250
+        self._fade_out_ms = 180
+        self._fade_start = _pg.time.get_ticks()
+        self._fading_out = False
+        self._fade_out_start = None
+        # start fully transparent
+        self.image = self._final_image.copy()
+        self.image.set_alpha(0)
+
+        # bookkeeping (mirror CharacterSpeechBox's contract so battle code keeps working)
+        self.character = character
+        self.character.speech = self
+        self.player_input_indicator = player_input_indicator
+        self.cutscene_event = cutscene_event
+        self.finish_unfolding = True  # JRPG box has no unfolding animation
+        self.head_part = None  # not used in this style
+
+        if voice:
+            self.battle.add_sound_effect_queue(choice(self.battle.sound_effect_pool[voice[0]]),
+                                               self.battle.camera_pos, voice[1],
+                                               voice[2], volume="voice")
+        elif voice is False:
+            self.battle.add_sound_effect_queue(choice(self.battle.sound_effect_pool["Parchment_write"]),
+                                               self.battle.camera_pos, 1000, 0, volume="voice")
+
+        if specific_timer:
+            self.timer = specific_timer
+        else:
+            self.timer = 3
+            if len(text) > 20:
+                self.timer += int(len(text) / 20)
+
+        if add_log:
+            self.battle.main_story_profile["dialogue log"].append(
+                ("(" + datetime.now().strftime("%d/%m/%Y %H:%M:%S") + ")" +
+                 " ch." + self.battle.chapter + "." + self.battle.mission + "." +
+                 self.battle.stage + " " + self.character.show_name + ": ", add_log))
+            if len(self.battle.main_story_profile["dialogue log"]) > 500:
+                self.battle.main_story_profile["dialogue log"] = self.battle.main_story_profile["dialogue log"][1:]
+
+    def update(self, *args, **kwargs):
+        # click-to-advance with fade-out animation.
+        # Called both by realtime_ui_updater (no args) and effect_updater (dt),
+        # so we accept anything and use real time for fade timing.
+        import pygame as _pg
+        now = _pg.time.get_ticks()
+
+        if not self._fading_out and self.battle.player_key_press[self.battle.main_player]["Weak"]:
+            self._fading_out = True
+            self._fade_out_start = now
+
+        if self._fading_out:
+            elapsed = now - self._fade_out_start
+            alpha = max(0, 255 - int((elapsed / self._fade_out_ms) * 255))
+            self.image = self._final_image.copy()
+            self.image.set_alpha(alpha)
+            if alpha <= 0:
+                self.character.speech = None
+                self.kill()
+                return
+        else:
+            elapsed = now - self._fade_start
+            alpha = min(255, int((elapsed / self._fade_in_ms) * 255))
+            self.image = self._final_image.copy()
+            self.image.set_alpha(alpha)
+
+        if not getattr(self.character, "live", True):
+            self.character.speech = None
+            self.kill()
 
 
 class DamageNumber(UIBattle):

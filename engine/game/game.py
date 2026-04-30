@@ -316,6 +316,10 @@ class Game:
 
         # battle containers
         CharacterSpeechBox.containers = self.effect_updater, self.battle_cameras["ui"], self.speech_boxes
+        from engine.uibattle.uibattle import JRPGDialogueBox
+        # JRPG dialogue is screen-pinned (rect in screen coords), so use realtime_ui_updater
+        # which Camera draws via out_update (no camera offset applied).
+        JRPGDialogueBox.containers = self.realtime_ui_updater, self.speech_boxes
         CharacterIndicator.containers = self.effect_updater, self.battle_cameras["ui"]
         DamageNumber.containers = self.effect_updater, self.battle_cameras["ui"]
         BodyPart.containers = self.effect_updater

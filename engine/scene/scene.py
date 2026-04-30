@@ -36,6 +36,11 @@ class Scene(Sprite):
         self.size_width = self.screen_width
         self.size_height = self.screen_height
 
+        # cross-fade state for bgchange-with-fade
+        self.bg_fade_image = None    # snapshot of the OLD full_scene_image
+        self.bg_fade_alpha = 0       # 255 = fully showing old, 0 = fully showing new
+        self.bg_fade_speed = 600     # alpha units per second
+
     def setup(self):
         self.full_scene_image = Surface((self.screen_width * len(self.data), self.size_height), SRCALPHA)
         for scene_index, image in self.data.items():
@@ -53,6 +58,17 @@ class Scene(Sprite):
             self.rect = self.current_scene_image.get_rect(midtop=(self.current_scene_image.get_width() / 2,
                                                                   camera_y_shift))
         self.image.blit(self.current_scene_image, self.rect)
+
+        # bg cross-fade: blit the OLD bg over the new one with diminishing alpha
+        if self.bg_fade_image is not None and self.bg_fade_alpha > 0:
+            old_sub = Surface.subsurface(self.bg_fade_image, (self.camera_left, 0,
+                                                              self.size_width, self.size_height))
+            old_sub.set_alpha(int(self.bg_fade_alpha))
+            self.image.blit(old_sub, self.rect)
+            self.bg_fade_alpha -= self.bg_fade_speed * self.battle.true_dt
+            if self.bg_fade_alpha <= 0:
+                self.bg_fade_alpha = 0
+                self.bg_fade_image = None
 
         if self.fade_start:
             if self.fade_in:  # keep fading in

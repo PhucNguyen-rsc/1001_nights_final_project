@@ -292,6 +292,22 @@ class Battle:
         battle_ui_images = self.game.battle_ui_images
         CharacterSpeechBox.images = battle_ui_images
 
+        # Load JRPG dialogue portraits from data/portrait/*.png
+        from os import listdir
+        from engine.uibattle.uibattle import JRPGDialogueBox
+        from engine.utils.data_loading import load_image
+        portrait_dir = path.join(self.data_dir, "portrait")
+        JRPGDialogueBox.portraits = {}
+        if path.isdir(portrait_dir):
+            for fname in sorted(listdir(portrait_dir)):
+                if fname.lower().endswith(".png"):
+                    name = fname[:-4].lower()
+                    try:
+                        JRPGDialogueBox.portraits[name] = load_image(
+                            self.data_dir, self.screen_scale, fname, ("portrait",))
+                    except Exception as e:
+                        print(f"failed to load portrait {fname}: {e}")
+
         self.screen_fade = ScreenFade()
         self.speech_prompt = CharacterInteractPrompt(battle_ui_images["button_weak"])
         # self.court_book = CourtBook(load_images(self.data_dir, screen_scale=self.screen_scale,
@@ -302,6 +318,8 @@ class Battle:
         battle_ui_dict = self.make_battle_ui(battle_ui_images)
 
         self.decision_select = YesNo(battle_ui_images)
+        from engine.uibattle.uibattle import ChoicePopup
+        self.choice_popup = ChoicePopup()
 
         self.player_portraits = battle_ui_dict["player_portraits"]
         self.player_wheel_uis = battle_ui_dict["player_wheel_uis"]
@@ -809,6 +827,9 @@ class Battle:
                     for player in self.player_control_keyboard:
                         if event_key_press in self.player_key_bind_name[player]:  # check for key press
                             self.player_key_press[player][self.player_key_bind_name[player][event_key_press]] = True
+                    # Also accept Space / Enter / Return as "Weak" (advance dialogue)
+                    if event_key_press in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_KP_ENTER):
+                        self.player_key_press[self.main_player]["Weak"] = True
 
                     # FOR DEVELOPMENT
                     if event.key == K_F1:
@@ -820,6 +841,10 @@ class Battle:
                         if not hasattr(self.game, "profiler"):
                             self.game.setup_profiler()
                         self.game.profiler.switch_show_hide()
+
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:  # left click also advances dialogue / confirms choice
+                        self.player_key_press[self.main_player]["Weak"] = True
 
                 elif event.type == JOYDEVICEADDED:
                     # Player add new joystick by plug in

@@ -3,7 +3,7 @@ from types import MethodType
 
 from pygame import Vector2
 
-from engine.uibattle.uibattle import CharacterSpeechBox
+from engine.uibattle.uibattle import CharacterSpeechBox, JRPGDialogueBox
 
 infinity = float("inf")
 
@@ -13,12 +13,16 @@ def event_hide_character(self, event):
     self.battle_camera.remove(self.body_parts.values())
     if self.indicator:  # also hide indicator
         self.battle_camera.remove(self.indicator)
-    self.cutscene_update = MethodType(Character.inactive_update, self)
+    # NOTE: don't switch to inactive_update — we want hidden characters to
+    # keep processing dialogue events so they can deliver narrator lines while
+    # off-screen (during blackouts).
     self.battle.cutscene_playing.remove(event)
 
 
 def event_show_character(self, event):
     from engine.character.character import Character
+    # re-add body parts that were removed by event_hide_character
+    self.battle_camera.add(*self.body_parts.values())
     if self.indicator:
         self.battle_camera.add(self.indicator)
     self.cutscene_update = MethodType(Character.cutscene_update, self)
@@ -153,10 +157,23 @@ def start_speech(self, event, event_property):
             self.new_direction = event_property["direction"].capitalize()
             self.rotate_logic()
 
-    self.speech = CharacterSpeechBox(self, self.battle.localisation.grab_text(("event", event["Text ID"], "Text")),
-                                     specific_timer=specific_timer,
-                                     player_input_indicator=player_input_indicator,
-                                     cutscene_event=event, add_log=event["Text ID"], voice=voice, body_part=body_part,
-                                     font_size=font_size, max_text_width=max_text_width)
+    text_localised = self.battle.localisation.grab_text(("event", event["Text ID"], "Text"))
+    if "portrait" in event_property:
+        side = event_property.get("side", "right")
+        speaker_name = event_property.get("speaker", self.show_name)
+        self.speech = JRPGDialogueBox(self, text_localised,
+                                      portrait=event_property["portrait"],
+                                      side=side,
+                                      speaker_name=speaker_name,
+                                      specific_timer=specific_timer,
+                                      player_input_indicator=player_input_indicator,
+                                      cutscene_event=event, add_log=event["Text ID"], voice=voice,
+                                      font_size=font_size)
+    else:
+        self.speech = CharacterSpeechBox(self, text_localised,
+                                         specific_timer=specific_timer,
+                                         player_input_indicator=player_input_indicator,
+                                         cutscene_event=event, add_log=event["Text ID"], voice=voice, body_part=body_part,
+                                         font_size=font_size, max_text_width=max_text_width)
 
 

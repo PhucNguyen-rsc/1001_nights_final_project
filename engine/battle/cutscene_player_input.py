@@ -16,6 +16,15 @@ def cutscene_player_input(self):
                                     self.cutscene_playing.remove(child_event2)
                             self.decision_select.selected = None
                             self.realtime_ui_updater.remove(self.decision_select)
+                    elif child_event["Property"]["select"] == "choice":
+                        if self.choice_popup.selected:
+                            self.end_cutscene_event(child_event)
+                            for child_event2 in self.cutscene_playing.copy():
+                                if ("yes" in child_event2["Trigger"] or "no" in child_event2["Trigger"]) and \
+                                        self.choice_popup.selected not in child_event2["Trigger"]:
+                                    self.cutscene_playing.remove(child_event2)
+                            self.choice_popup.selected = None
+                            self.realtime_ui_updater.remove(self.choice_popup)
                     break  # only one select event can be played at a time
 
                 elif "interact" in child_event["Property"]:

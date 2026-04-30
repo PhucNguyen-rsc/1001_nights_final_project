@@ -5,7 +5,7 @@ browser = webbrowser.get()
 
 def menu_main(self):
     if self.start_game_button.event:  # preset map list menu
-        self.start_battle("1", "1", "Teaparty")
+        self.start_battle("1", "1", "1")
 
     # elif self.lore_button.event:  # battle
     #     self.start_battle("1", "1", "Miqdoll")
