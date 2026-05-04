@@ -1,5 +1,6 @@
 "ID","Text ID","Object","Animation","Type","Trigger","Property"
 "event","","none","","music","start,all",""
+"event","","Cave Droplets","","ambient","start,all",""
 "","","camera","blackout","cutscene","","timer:1,instant fade,wait,fade"
 "","m4/1","Alibaba","Default","","","timer:5,hold,wait,voice:(Parchment_write;3000;0),portrait:alibaba_worried,side:right,speaker:Ali Baba"
 "","m4/2","Mariana","Default","","","timer:6,hold,wait,voice:(Parchment_write;3000;0),portrait:marianna_decisive,side:left,speaker:Marjana"

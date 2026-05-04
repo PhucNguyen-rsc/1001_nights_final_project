@@ -1,5 +1,6 @@
 "ID","Text ID","Object","Animation","Type","Trigger","Property"
 "event","","none","","music","start,all",""
+"event","","Night Ambience","","ambient","start,all",""
 "","","camera","blackout","cutscene","","timer:1,instant fade,wait,fade"
 "","m6/1","Mariana","Default","","","timer:6,hold,wait,voice:(Parchment_write;3000;0),portrait:marianna_neutral,side:left,speaker:Marjana"
 "","m6/2","Mariana","Default","","","timer:5,hold,wait,voice:(Parchment_write;3000;0),portrait:marianna_wary,side:left,speaker:Marjana"
