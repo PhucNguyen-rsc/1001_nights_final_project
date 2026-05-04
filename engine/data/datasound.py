@@ -16,7 +16,7 @@ class SoundData(GameData):
         self.sound_effect_pool = {}
         dir_path = join(self.data_dir, "sound", "effect")
         for file in listdir(dir_path):
-            if file.endswith(".ogg"):  # read ogg file only
+            if file.endswith((".ogg", ".mp3")):  # read ogg and mp3 files
                 file_name = file.split(".")[0]
                 if file_name[-1].isdigit() and "_" in file_name and file_name.rfind("_") <= len(file_name) - 2 and \
                         file_name[file_name.rfind("_") + 1].isdigit():  # variation for same sound effect
@@ -33,16 +33,16 @@ class SoundData(GameData):
             self.sound_effect_pool[file_name] = tuple([Sound(item) for item in self.sound_effect_pool[file_name]])
 
         # load music
-        self.music_pool = glob(join(self.data_dir, "sound", "music", "*.ogg"))
-        self.music_pool = {fcv(split(item)[-1].replace(".ogg", "")): item for
+        self.music_pool = [f for f in glob(join(self.data_dir, "sound", "music", "*")) if f.endswith((".ogg", ".mp3"))]
+        self.music_pool = {fcv(split(item)[-1].split(".")[0]): item for
                            item in self.music_pool}
 
         # load ambient
-        self.ambient_pool = glob(join(self.data_dir, "sound", "ambient", "*.ogg"))
-        self.ambient_pool = {fcv(split(item)[-1].replace(".ogg", "")): item for
+        self.ambient_pool = [f for f in glob(join(self.data_dir, "sound", "ambient", "*")) if f.endswith((".ogg", ".mp3"))]
+        self.ambient_pool = {fcv(split(item)[-1].split(".")[0]): item for
                              item in self.ambient_pool}
 
         # load weather ambient
-        self.weather_ambient_pool = glob(join(self.data_dir, "sound", "weather", "*.ogg"))
-        self.weather_ambient_pool = {fcv(split(item)[-1].replace(".ogg", "")): item for
+        self.weather_ambient_pool = [f for f in glob(join(self.data_dir, "sound", "weather", "*")) if f.endswith((".ogg", ".mp3"))]
+        self.weather_ambient_pool = {fcv(split(item)[-1].split(".")[0]): item for
                                      item in self.weather_ambient_pool}

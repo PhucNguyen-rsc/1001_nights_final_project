@@ -1,5 +1,6 @@
 "ID","Text ID","Object","Animation","Type","Trigger","Property"
 "event","","none","","music","start,all",""
+"event","","Night Ambience","","ambient","start,all",""
 "","","camera","blackout","cutscene","","timer:1,instant fade,wait,fade"
 "","m5/1","Mariana","Default","","","timer:6,hold,wait,voice:(Parchment_write;3000;0),portrait:marianna_decisive,side:left,speaker:Marjana"
 "","m5/2","Alibaba","Default","","","timer:3,hold,wait,voice:(Parchment_write;3000;0),portrait:alibaba_worried,side:right,speaker:Ali Baba"
