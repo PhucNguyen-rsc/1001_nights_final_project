@@ -143,11 +143,12 @@ class Game:
     resolution_list = ("3840 x 2160", "3200 x 1800", "2560 x 1440", "1920 x 1080", "1600 x 900", "1360 x 768",
                        "1280 x 720", "1024 x 576", "960 x 540", "854 x 480")
 
-    def __init__(self, main_dir, error_log):
+    def __init__(self, main_dir, error_log, dev_mission=None):
         Game.game = self
         Game.main_dir = main_dir
         Game.data_dir = os.path.join(self.main_dir, "data")
         Game.font_dir = os.path.join(self.data_dir, "font")
+        self.dev_mission = dev_mission
 
         self.config_path = os.path.join(self.main_dir, "configuration.ini")
 
@@ -399,11 +400,9 @@ class Game:
 
         self.start_game_button = BrownMenuButton((-1.5, 1), key_name="main_menu_start_game",
                                                  parent=main_menu_buttons_box)
-        # self.lore_button = BrownMenuButton((-0.7, 1), key_name="main_menu_lorebook", parent=main_menu_buttons_box)
-        self.option_button = BrownMenuButton((0, 1), key_name="game_option", parent=main_menu_buttons_box)
         self.quit_button = BrownMenuButton((1.5, 1), key_name="game_quit", parent=main_menu_buttons_box)
 
-        self.mainmenu_button = (self.start_game_button, self.option_button, self.quit_button)  # self.lore_button,
+        self.mainmenu_button = (self.start_game_button, self.quit_button)
 
         # self.map_preview = MapPreview(self.preset_map_list_box.rect.topright)
 
@@ -510,6 +509,8 @@ class Game:
 
         self.loading_screen("end")
 
+        if self.dev_mission is not None:
+            self.start_battle("1", str(self.dev_mission), "1")
         self.run()
 
     def game_intro(self, intro):
