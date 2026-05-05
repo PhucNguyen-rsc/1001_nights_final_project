@@ -446,25 +446,43 @@ class ChoicePopup(UIBattle):
         self.option_b = str(option_b)
         self.selected = None
         sx, sy = self.screen_scale
-        font = Font(self.ui_font["main_button"], int(34 * sy))
-        a_label = font.render("A) " + self.option_a, True, (255, 240, 200))
-        b_label = font.render("B) " + self.option_b, True, (255, 240, 200))
-        pad_x = int(40 * sx)
-        pad_y = int(22 * sy)
+        # Bigger, more readable font for the choice text
+        font = Font(self.ui_font["main_button"], int(56 * sy))
+        a_label = font.render("A.  " + self.option_a, True, (255, 230, 170))
+        b_label = font.render("B.  " + self.option_b, True, (255, 230, 170))
+        pad_x = int(80 * sx)
+        pad_y = int(36 * sy)
         button_w = max(a_label.get_width(), b_label.get_width()) + pad_x * 2
         button_h = a_label.get_height() + pad_y * 2
-        gap = int(20 * sy)
-        total_h = button_h * 2 + gap
-        self.image = Surface((button_w, total_h), SRCALPHA)
-        self.a_rect_local = Rect(0, 0, button_w, button_h)
-        self.b_rect_local = Rect(0, button_h + gap, button_w, button_h)
+        gap = int(34 * sy)
+        # leave a margin around the button rects so the gold border + outer
+        # shadow don't get clipped at the edges of the surface
+        margin = int(8 * sy)
+        total_h = button_h * 2 + gap + margin * 2
+        total_w = button_w + margin * 2
+        self.image = Surface((total_w, total_h), SRCALPHA)
+        self.a_rect_local = Rect(margin, margin, button_w, button_h)
+        self.b_rect_local = Rect(margin, margin + button_h + gap, button_w, button_h)
+
+        border_w = max(3, int(5 * sy))
         for r, label in ((self.a_rect_local, a_label), (self.b_rect_local, b_label)):
-            draw.rect(self.image, (10, 10, 18, 240), r)
-            draw.rect(self.image, (180, 150, 80), r, max(1, int(2 * sy)))
+            # subtle outer shadow
+            shadow = Rect(r.x + int(4 * sx), r.y + int(4 * sy), r.width, r.height)
+            draw.rect(self.image, (0, 0, 0, 120), shadow, border_radius=int(14 * sy))
+            # deep parchment-dark fill
+            draw.rect(self.image, (28, 22, 18, 235), r, border_radius=int(14 * sy))
+            # gold double border (outer thick + inner thin)
+            draw.rect(self.image, (200, 168, 96), r,
+                      border_w, border_radius=int(14 * sy))
+            inner = r.inflate(-int(10 * sx), -int(10 * sy))
+            draw.rect(self.image, (140, 110, 60), inner,
+                      max(1, int(1 * sy)), border_radius=int(10 * sy))
             self.image.blit(label, (r.x + pad_x, r.y + pad_y))
         self.base_image = self.image.copy()
         sw, sh = self.screen_size
-        self.rect = self.image.get_rect(center=(sw // 2, int(sh * 0.40)))
+        # shift the popup lower on screen — sits above dialog box but well
+        # below the painted scene composition
+        self.rect = self.image.get_rect(center=(sw // 2, int(sh * 0.62)))
 
     def update(self):
         if not self.option_a:
@@ -473,12 +491,16 @@ class ChoicePopup(UIBattle):
         cursor = self.battle.main_player_battle_cursor.pos
         rel = (cursor[0] - self.rect.topleft[0], cursor[1] - self.rect.topleft[1])
         sy = self.screen_scale[1]
+        # bright cream highlight ring on hover
+        hover_w = max(3, int(6 * sy))
         if self.a_rect_local.collidepoint(rel):
-            draw.rect(self.image, (255, 240, 200), self.a_rect_local, max(2, int(4 * sy)))
+            draw.rect(self.image, (255, 245, 210), self.a_rect_local,
+                      hover_w, border_radius=int(14 * sy))
             if self.battle.player_key_press[self.battle.main_player]["Weak"]:
                 self.selected = "yes"
         elif self.b_rect_local.collidepoint(rel):
-            draw.rect(self.image, (255, 240, 200), self.b_rect_local, max(2, int(4 * sy)))
+            draw.rect(self.image, (255, 245, 210), self.b_rect_local,
+                      hover_w, border_radius=int(14 * sy))
             if self.battle.player_key_press[self.battle.main_player]["Weak"]:
                 self.selected = "no"
 

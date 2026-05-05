@@ -2,6 +2,11 @@ import argparse
 import os.path
 import sys
 import traceback
+import warnings
+
+# Silence the harmless macOS warning when SDL clamps the window to fit under
+# the title bar / dock chrome. The game still runs at the correct scale.
+warnings.filterwarnings("ignore", message=".*forcibly resized.*")
 
 from engine.game import game
 

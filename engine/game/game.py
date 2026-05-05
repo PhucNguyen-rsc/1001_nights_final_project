@@ -31,7 +31,7 @@ from engine.utils.data_loading import load_image, load_images, csv_read, load_ba
 from engine.utils.text_making import number_to_minus_or_plus
 from engine.weather.weather import MatterSprite, SpecialWeatherEffect
 
-game_name = "Royal Ring"  # Game name that will appear as game name at the windows bar
+game_name = "Ali Baba & the Forty Thieves — A Marjana Tale"  # Game name that will appear as game name at the windows bar
 
 
 class Game:
@@ -173,7 +173,8 @@ class Game:
             self.easy_text = int(self.config["USER"]["easy_text"])
             self.screen_width = int(self.config["USER"]["screen_width"])
             self.screen_height = int(self.config["USER"]["screen_height"])
-            self.full_screen = int(self.config["USER"]["full_screen"])
+            # Always boot in fullscreen — players can press Esc to exit to windowed
+            self.full_screen = 1
             self.master_volume = float(self.config["USER"]["master_volume"])
             self.music_volume = float(self.config["USER"]["music_volume"])
             self.play_music_volume = self.master_volume * self.music_volume / 10000  # convert volume into percentage
@@ -196,7 +197,8 @@ class Game:
             self.easy_text = int(self.config["USER"]["easy_text"])
             self.screen_width = int(self.config["USER"]["screen_width"])
             self.screen_height = int(self.config["USER"]["screen_height"])
-            self.full_screen = int(self.config["USER"]["full_screen"])
+            # Always boot in fullscreen — players can press Esc to exit to windowed
+            self.full_screen = 1
             self.master_volume = float(self.config["USER"]["master_volume"])
             self.music_volume = float(self.config["USER"]["music_volume"])
             self.play_music_volume = self.master_volume * self.music_volume / 10000
@@ -224,7 +226,9 @@ class Game:
         Game.screen_scale = (self.screen_width / 3840, self.screen_height / 2160)
         Game.screen_size = (self.screen_width, self.screen_height)
 
-        self.window_style = 0
+        # RESIZABLE so the macOS green-button zoom/maximize works in windowed mode.
+        # FULLSCREEN takes precedence when on.
+        self.window_style = pygame.RESIZABLE
         if self.full_screen == 1:
             self.window_style = pygame.FULLSCREEN
         self.screen = display.set_mode(self.screen_size, self.window_style)
@@ -654,13 +658,25 @@ class Game:
                             self.input_box.player_input(event, key_press)
                             self.text_delay = 0.1
                     else:
-                        for player in self.player_key_control:
-                            if self.player_key_control[player] == "keyboard" and \
-                                    event_key_press in self.player_key_bind_name[player]:  # check for key press
-                                self.player_key_press[player][self.player_key_bind_name[player][event_key_press]] = True
+                        # Esc / F11 are reserved for fullscreen toggle ONLY — don't
+                        # propagate them to the player-keybind dict (which would otherwise
+                        # trigger Menu/Cancel and open the in-battle menu).
+                        if event.key not in (pygame.K_ESCAPE, pygame.K_F11):
+                            for player in self.player_key_control:
+                                if self.player_key_control[player] == "keyboard" and \
+                                        event_key_press in self.player_key_bind_name[player]:  # check for key press
+                                    self.player_key_press[player][self.player_key_bind_name[player][event_key_press]] = True
 
-                        if event.key == pygame.K_ESCAPE:
-                            self.esc_press = True
+                        if event.key == pygame.K_ESCAPE or event.key == pygame.K_F11:
+                            # Esc / F11 = toggle fullscreen ONLY. Never trigger quit dialog.
+                            if self.full_screen:
+                                self.full_screen = 0
+                                self.window_style = pygame.RESIZABLE
+                            else:
+                                self.full_screen = 1
+                                self.window_style = pygame.FULLSCREEN
+                            self.screen = display.set_mode(self.screen_size, self.window_style)
+                            Game.screen_rect = self.screen.get_rect()
 
                 elif event.type == JOYDEVICEADDED:
                     # Player add new joystick by plug in

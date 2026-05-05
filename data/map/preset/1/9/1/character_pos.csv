@@ -1,3 +1,5 @@
 "Object ID","ID","Camera","Scene","POS","Ground Y POS","Direction","Stage Property"
-"Mariana","Trina","1","1","1300,1400","","Right","idle:Default,set layer:2"
-"Alibaba","Miquella","1","1","2200,1400","","Left","idle:Default,set layer:2"
+"Mariana","Trina","1","1","1100,1750","","Right","idle:Default,set layer:2"
+"Tailor","Miquella_doll","1","1","1500,2000","","Right","idle:Big,set layer:2"
+"Alibaba","Miquella","1","1","1700,1750","","Right","idle:Default,set layer:2"
+"Captain","Rabbit_leader","1","1","2700,2200","","Left","idle:Big,set layer:2"
