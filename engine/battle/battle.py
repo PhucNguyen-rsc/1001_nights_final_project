@@ -822,11 +822,22 @@ class Battle:
 
                 elif event.type == pygame.KEYDOWN:
                     event_key_press = event.key
-                    if event_key_press == K_ESCAPE:  # accept esc button always
-                        self.esc_press = True
-                    for player in self.player_control_keyboard:
-                        if event_key_press in self.player_key_bind_name[player]:  # check for key press
-                            self.player_key_press[player][self.player_key_bind_name[player][event_key_press]] = True
+                    # Esc / F11 = toggle fullscreen ONLY. Don't open in-battle menu.
+                    if event_key_press in (K_ESCAPE, pygame.K_F11):
+                        if self.game.full_screen:
+                            self.game.full_screen = 0
+                            self.game.window_style = pygame.RESIZABLE
+                        else:
+                            self.game.full_screen = 1
+                            self.game.window_style = pygame.FULLSCREEN
+                        self.game.screen = pygame.display.set_mode(
+                            self.game.screen_size, self.game.window_style)
+                        from engine.game.game import Game as _G
+                        _G.screen_rect = self.game.screen.get_rect()
+                    else:
+                        for player in self.player_control_keyboard:
+                            if event_key_press in self.player_key_bind_name[player]:  # check for key press
+                                self.player_key_press[player][self.player_key_bind_name[player][event_key_press]] = True
                     # Also accept Space / Enter / Return as "Weak" (advance dialogue)
                     if event_key_press in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_KP_ENTER):
                         self.player_key_press[self.main_player]["Weak"] = True
@@ -874,9 +885,8 @@ class Battle:
                             self.joystick_player.pop(value)
                             break
 
-            if self.player_key_press[self.main_player]["Menu/Cancel"]:
-                # open/close menu
-                self.esc_press = True
+            # Menu/Cancel → esc_press relay disabled. Esc is reserved for fullscreen
+            # toggle (handled in the KEYDOWN branch above).
 
             self.ui_updater.update()  # update ui before more specific update
 

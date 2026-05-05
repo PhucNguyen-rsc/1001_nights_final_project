@@ -10,6 +10,10 @@ infinity = float("inf")
 
 def event_hide_character(self, event):
     from engine.character.character import Character
+    # mark invisible so re_rect (called after animation updates) keeps the
+    # body parts removed from the camera even when the character speaks
+    # narrator lines while hidden
+    self.invisible = True
     self.battle_camera.remove(self.body_parts.values())
     if self.indicator:  # also hide indicator
         self.battle_camera.remove(self.indicator)
@@ -21,7 +25,8 @@ def event_hide_character(self, event):
 
 def event_show_character(self, event):
     from engine.character.character import Character
-    # re-add body parts that were removed by event_hide_character
+    # clear invisible flag and re-add body parts that were removed by event_hide_character
+    self.invisible = False
     self.battle_camera.add(*self.body_parts.values())
     if self.indicator:
         self.battle_camera.add(self.indicator)

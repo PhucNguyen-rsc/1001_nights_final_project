@@ -1,5 +1,5 @@
 "Object ID","ID","Camera","Scene","POS","Ground Y POS","Direction","Stage Property"
 "Mariana","Trina",1,1,"1100,1750",,"Right","idle:Default,set layer:2"
 "Alibaba","Miquella",1,1,"1500,1750",,"Right","idle:Default,set layer:2"
-"Captain","Rabbit_leader",1,1,"2400,1750",,"Left","idle:Default,set layer:2"
-"Thief","Rabbit_servant",1,1,"2700,1750",,"Left","idle:Default,set layer:2"
+"Captain","Rabbit_leader",1,1,"2400,1900",,"Left","idle:Default,set layer:2"
+"Thief","Rabbit_servant",1,1,"2700,1900",,"Left","idle:Default,set layer:2"
